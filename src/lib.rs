@@ -25,30 +25,6 @@ impl PartialEq for DirectoryContent {
     }
 }
 
-//macro_rules! directory {
-//    ( $( $key:expr => $value:expr ),* $(,)? ) => {
-//        {
-//            let mut map = std::collections::HashMap::new();
-//            $(
-//                map.insert($key.to_string(), $value);
-//            )*
-//            DirectoryContent::Directory(Directory(map))
-//        }
-//    };
-//}
-//
-//macro_rules! fixture {
-//    ( $( $key:expr => $value:expr ),* $(,)? ) => {
-//        {
-//            let mut map = std::collections::HashMap::new();
-//            $(
-//                map.insert($key.to_string(), $value);
-//            )*
-//            Directory(map)
-//        }
-//    };
-//}
-
 #[macro_export]
 macro_rules! directory {
     // Literal file entry
