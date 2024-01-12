@@ -33,7 +33,7 @@ macro_rules! directory {
 
     // @directory
     // empty directory entry
-    (@directory $map:ident ()) => {};
+    //(@directory $map:ident ()) => {};
 
     // // Next value is a directory.
     // (@directory $map:ident ($($key:expr)+) (=> {$($dir:tt)*} $($rest:tt)*)) => {
@@ -42,11 +42,18 @@ macro_rules! directory {
     //     directory!(@directory $map [$($key)+] (directory!({$($dir)*})) $($rest)*);
     // };
 
-    // Next value is a string followed by a comma
-    (@directory $map:ident ($($key:expr)+) (=> $value:expr, $($rest:tt)*)) => {
-        let _ = $map.insert(($($key)+).into(), DirectoryContent::File($value.into()));
+    // Next value is a string, last item
+    (@directory $map:ident $($key:expr => $value:expr)+ $(,)?) => {
+        let _ = $map.insert(($($key)+).into(), DirectoryContent::File(($($value)+).into()));
 
-        //directory!(@directory $map ($($rest)*));
+        DirectoryContent::Directory(Directory(map))
+    };
+
+    // Next value is a string followed by a comma
+    (@directory $map:ident $($key:expr => $value:expr, $rest:tt)*) => {
+        let _ = $map.insert(($key).into(), DirectoryContent::File($value.into()));
+
+        directory!(@directory $map $($rest)*);
     };
 
     // // Recursive directory structure
@@ -60,29 +67,32 @@ macro_rules! directory {
     //     }
     // };
     //
-    // // Literal file entry
-    // ( $( $key:expr => $value:expr ),* $(,)? ) => {
+    // Literal file entry
+    // (@directory $map:ident $( $key:expr => $value:expr, $($rest:tt)*)+) => {
     //     {
-    //         let mut map = std::collections::HashMap::new();
     //         $(
-    //             map.insert($key.to_string(), DirectoryContent::File($value.to_string()));
+    //             map.insert($key.into(), DirectoryContent::File($value.to_string()));
     //         )*
     //         DirectoryContent::Directory(Directory(map))
     //     }
     // };
 
+}
+
+#[macro_export]
+macro_rules! fixture {
+    ($($tt:tt)+) => {{
+        let mut map = std::collections::HashMap::new();
+
+        directory!(@directory map $($tt)+)
+    }};
+
     // handle empty invocation:
     // directory! {}
      () => {{
          let mut map: HashMap<String, DirectoryContent> = std::collections::HashMap::new();
-         DirectoryContent::Directory(Directory(map))
+         Directory(map)
      }};
-
-    ({$($tt:tt)+}) => {{
-        let mut map = std::collections::HashMap::new();
-
-        directory!(@directory map ($($tt)+));
-    }};
 }
 
 #[cfg(test)]
@@ -91,9 +101,9 @@ mod tests {
 
     #[test]
     fn directory_macro_works_for_files() {
-        let macro_fixture = directory! {
+        let macro_fixture = fixture! {
             "someOtherFile" => "other contents",
-            "otherFile" => "lol yesss",
+            //"otherFile" => "lol yesss",
         };
 
         let mut contents = HashMap::new();
@@ -106,19 +116,18 @@ mod tests {
             DirectoryContent::File("lol yesss".to_string()),
         );
 
-        let expected = DirectoryContent::Directory(Directory(contents));
+        let expected = Directory(contents);
 
         assert_eq!(macro_fixture, expected);
     }
 
     #[test]
     fn fixture_macro_without_contents_works() {
-        let macro_fixture = directory! {};
+        let macro_fixture = fixture! {};
 
         let contents = HashMap::new();
-        let expected = DirectoryContent::Directory(Directory(contents));
 
-        assert_eq!(macro_fixture, expected);
+        assert_eq!(macro_fixture, Directory(contents));
     }
 
     // #[test]
